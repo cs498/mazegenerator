@@ -13,6 +13,9 @@
 #include <iostream>
 #include <map>
 #include <string>
+#include <fstream>
+#include <sstream>
+
 
 void usage(std::ostream &out) {
   out << "Usage: mazegen [--help] [-m <maze type>] [-a <algorithm type>]"
@@ -69,6 +72,9 @@ void usage(std::ostream &out) {
       << "The color of the background of the maze (defaut: white)" << std::endl;
   out << "  -l      "
       << "The width of the lines of the maze (default: 3)" << std::endl;
+  out << "  -i      "
+      << "input a text file to style the maze (color of the lines (-b), background color (-l), the width of the lines (-l)" << std::endl;
+
 }
 
 int main(int argc, char *argv[]) {
@@ -78,7 +84,7 @@ int main(int argc, char *argv[]) {
   std::map<std::string, int> optionmap{{"-m", 0},  {"-a", 0},     {"-s", 20},
                                        {"-w", 20}, {"-h", 20},    {"-o", 0},
                                        {"-f", 0},  {"--help", 0}, {"-t", 0},
-                                       {"-c", 0},  {"-l", 0},     {"-b", 0}};
+                                       {"-c", 0},  {"-l", 0},     {"-b", 0}, {"-i", 0}};
 
   for (int i = 1; i < argc; i++) {
     if (optionmap.find(argv[i]) == optionmap.end()) {
@@ -114,8 +120,35 @@ int main(int argc, char *argv[]) {
       return 1;
     }
 
-    if (strcmp("-c", argv[i]) == 0) {
-      std::cout << "hi\n";
+	if (strcmp("-i", argv[i]) == 0){
+        std::cout<<"using input style\n";
+        std::string fileName = argv[++i];
+        std::ifstream inputFile;
+        inputFile.open(fileName,std::ios::in);
+        if(inputFile.is_open()){
+          std::string line;
+          std::vector<std::string> tokens;
+          while(getline(inputFile,line)){       
+                if(line.length() < 1){
+                        continue;
+                }
+                std::stringstream ss(line);
+                std::string token;
+                tokens.clear();
+                while (getline(ss, token, ' ')){
+                     std::cout << token << std::endl;
+                     tokens.push_back(token);
+                }
+                if(tokens.size() == 3){
+                  color=tokens[0];
+                  backColor=tokens[1];
+                  strokeWidth=stoi(tokens[2]);
+                  break;
+                }
+          }
+          inputFile.close();
+        }
+    } else if (strcmp("-c", argv[i]) == 0) {
       color = argv[++i];
     } else if (strcmp("-l", argv[i]) == 0) {
       strokeWidth = std::stoi(argv[++i]);
