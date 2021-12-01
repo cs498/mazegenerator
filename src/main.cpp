@@ -15,7 +15,41 @@
 #include <string>
 #include <fstream>
 #include <sstream>
+#include <unordered_set>
 
+const std::unordered_set<std::string> COLORS ({"white", "black", "dark-grey", "red",
+                                              "web-green", "web-blue", "dark-magenta",
+                                              "dark-cyan", "dark-orange", "dark-yellow",
+                                              "royalblue", "goldenrod", "dark-spring-green",
+                                              "purple", "steelblue", "dark-red",
+                                              "dark-chartreuse", "orchid", "aquamarine",
+                                              "brown", "yellow", "turquoise", "grey0",
+                                              "grey10", "grey20", "grey30", "grey40",
+                                              "grey50", "grey60", "grey70", "grey",
+                                              "grey80", "grey90", "grey100", "light-red",
+                                              "light-green", "light-blue", "light-magenta",
+                                              "light-cyan", "light-goldenrod", "light-pink",
+                                              "light-turquoise", "gold", "green",
+                                              "dark-green", "spring-green", "forest-green",
+                                              "sea-green", "blue", "dark-blue",
+                                              "midnight-blue", "navy", "medium-blue",
+                                              "skyblue", "cyan", "magenta", "dark-turquoise",
+                                              "dark-pink", "coral", "light-coral",
+                                              "orange-red", "salmon", "dark-salmon", "khaki",
+                                              "dark-khaki", "dark-goldenrod", "beige",
+                                              "olive", "orange", "violet", "dark-violet",
+                                              "plum", "dark-plum", "dark-olivegreen",
+                                              "orangered4", "brown4", "sienna4", "orchid4",
+                                              "mediumpurple3", "slateblue1", "yellow4",
+                                              "sienna1", "tan1", "sandybrown",
+                                              "light-salmon", "pink", "khaki1",
+                                              "lemonchiffon", "bisque", "honeydew", 
+                                              "slategrey", "seagreen", "antiquewhite", 
+                                              "chartreuse", "greenyellow", "gray",
+                                              "light-gray", "light-grey", "dark-gray", 
+                                              "slategray", "gray0", "gray10", "gray20", 
+                                              "gray30", "gray40", "gray50", "gray60", 
+                                              "gray70", "gray80", "gray90", "gray100"});
 
 void usage(std::ostream &out) {
   out << "Usage: mazegen [--help] [-m <maze type>] [-a <algorithm type>]"
@@ -67,13 +101,13 @@ void usage(std::ostream &out) {
   out << "  -o      "
       << "Prefix for .svg, .plt and .png outputs (default: maze)" << std::endl;
   out << "  -c      "
-      << "The color of the lines of the maze (defaut: black)" << std::endl;
+      << "Color of the lines of the maze (defaut: black)" << std::endl;
   out << "  -b      "
-      << "The color of the background of the maze (defaut: white)" << std::endl;
+      << "Color of the background of the maze (defaut: white)" << std::endl;
   out << "  -l      "
-      << "The width of the lines of the maze (default: 3)" << std::endl;
+      << "Width of the lines of the maze (default: 3)" << std::endl;
   out << "  -i      "
-      << "input a text file to style the maze (color of the lines (-b), background color (-l), the width of the lines (-l)" << std::endl;
+      << "Text file to style the maze: color of the lines (-c), background color (-b), the width of the lines (-l)" << std::endl;
 
 }
 
@@ -84,7 +118,8 @@ int main(int argc, char *argv[]) {
   std::map<std::string, int> optionmap{{"-m", 0},  {"-a", 0},     {"-s", 20},
                                        {"-w", 20}, {"-h", 20},    {"-o", 0},
                                        {"-f", 0},  {"--help", 0}, {"-t", 0},
-                                       {"-c", 0},  {"-l", 0},     {"-b", 0}, {"-i", 0}};
+                                       {"-c", 0},  {"-l", 3},     {"-b", 0},
+                                       {"-i", 0}};
 
   for (int i = 1; i < argc; i++) {
     if (optionmap.find(argv[i]) == optionmap.end()) {
@@ -119,40 +154,47 @@ int main(int argc, char *argv[]) {
       usage(std::cerr);
       return 1;
     }
-
-	if (strcmp("-i", argv[i]) == 0){
-        std::cout<<"using input style\n";
-        std::string fileName = argv[++i];
-        std::ifstream inputFile;
-        inputFile.open(fileName,std::ios::in);
-        if(inputFile.is_open()){
-          std::string line;
-          std::vector<std::string> tokens;
-          while(getline(inputFile,line)){       
-                if(line.length() < 1){
-                        continue;
-                }
-                std::stringstream ss(line);
-                std::string token;
-                tokens.clear();
-                while (getline(ss, token, ' ')){
-                     std::cout << token << std::endl;
-                     tokens.push_back(token);
-                }
-                if(tokens.size() == 3){
-                  color=tokens[0];
-                  backColor=tokens[1];
-                  strokeWidth=stoi(tokens[2]);
-                  break;
-                }
-          }
-          inputFile.close();
+    
+    if (strcmp("-i", argv[i]) == 0) {
+      std::string fileName = argv[++i];
+      std::ifstream inputFile;
+      inputFile.open(fileName,std::ios::in);
+      if (inputFile.is_open()) {
+        std::string line;
+        std::vector<std::string> tokens;
+        while (getline(inputFile,line)) {       
+              if (line.length() < 1) {
+                      continue;
+              }
+              std::stringstream ss(line);
+              std::string token;
+              tokens.clear();
+              while (getline(ss, token, ' ')) {
+                    std::cout << token << std::endl;
+                    tokens.push_back(token);
+              }
+              if (tokens.size() == 3) {
+                color=tokens[0];
+                backColor=tokens[1];
+                strokeWidth=stoi(tokens[2]);
+                break;
+              }
         }
+        inputFile.close();
+      }
     } else if (strcmp("-c", argv[i]) == 0) {
+      if (COLORS.find(argv[i + 1]) == COLORS.end()) {
+        std::cerr << "Unknown color " << argv[i + 1] << std::endl;
+        usage(std::cerr);
+        return 1;
+      }
       color = argv[++i];
-    } else if (strcmp("-l", argv[i]) == 0) {
-      strokeWidth = std::stoi(argv[++i]);
     } else if (strcmp("-b", argv[i]) == 0) {
+      if (COLORS.find(argv[i + 1]) == COLORS.end()) {
+        std::cerr << "Unknown background color " << argv[i + 1] << std::endl;
+        usage(std::cerr);
+        return 1;
+      }
       backColor = argv[++i];
     } else {
       int x;
