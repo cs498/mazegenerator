@@ -15,9 +15,11 @@
 #include <string>
 #include <fstream>
 #include <sstream>
+#include <unordered_map>
 #include <unordered_set>
+#include <utility>
 
-const std::unordered_set<std::string> COLORS ({"white", "black", "dark-grey", "red",
+const std::unordered_set<std::string> COLORS({"white", "black", "dark-grey", "red",
                                               "web-green", "web-blue", "dark-magenta",
                                               "dark-cyan", "dark-orange", "dark-yellow",
                                               "royalblue", "goldenrod", "dark-spring-green",
@@ -50,6 +52,12 @@ const std::unordered_set<std::string> COLORS ({"white", "black", "dark-grey", "r
                                               "slategray", "gray0", "gray10", "gray20", 
                                               "gray30", "gray40", "gray50", "gray60", 
                                               "gray70", "gray80", "gray90", "gray100"});
+
+const std::unordered_map<std::string, std::pair<std::string, std::string>> HOLIDAY_THEMES({{"valentines", std::make_pair("brown", "pink")},
+                                                                                          {"easter", std::make_pair("pink", "skyblue")},
+                                                                                          {"halloween", std::make_pair("orange", "black")},
+                                                                                          {"thanksgiving", std::make_pair("goldenrod", "brown")},
+                                                                                          {"christmas", std::make_pair("red", "green")}});
 
 void usage(std::ostream &out) {
   out << "Usage: mazegen [--help] [-m <maze type>] [-a <algorithm type>]"
@@ -108,18 +116,19 @@ void usage(std::ostream &out) {
       << "Width of the lines of the maze (default: 3)" << std::endl;
   out << "  -i      "
       << "Text file to style the maze: color of the lines (-c), background color (-b), the width of the lines (-l)" << std::endl;
-
+  out << "  -d      "
+      << "Holiday theme stylization: valentines, easter, halloween, thanskgiving, christmas" << std::endl;
 }
 
 int main(int argc, char *argv[]) {
   std::string outputprefix = "maze", infile = "";
   std::string color = "black", backColor = "white";
-  int strokeWidth = 3;
+  bool theme = false; int strokeWidth = 3;
   std::map<std::string, int> optionmap{{"-m", 0},  {"-a", 0},     {"-s", 20},
                                        {"-w", 20}, {"-h", 20},    {"-o", 0},
                                        {"-f", 0},  {"--help", 0}, {"-t", 0},
                                        {"-c", 0},  {"-l", 3},     {"-b", 0},
-                                       {"-i", 0}};
+                                       {"-i", 0},  {"-d", 0}};
 
   for (int i = 1; i < argc; i++) {
     if (optionmap.find(argv[i]) == optionmap.end()) {
@@ -155,7 +164,16 @@ int main(int argc, char *argv[]) {
       return 1;
     }
     
-    if (strcmp("-i", argv[i]) == 0) {
+    if (strcmp("-d", argv[i]) == 0) {
+      if (HOLIDAY_THEMES.find(argv[i + 1]) == HOLIDAY_THEMES.end()) {
+        std::cerr << "Unknown holiday theme " << argv[i + 1] << std::endl;
+        usage(std::cerr);
+        return 1;
+      }
+      theme = true;
+      color = HOLIDAY_THEMES.at(argv[++i]).first;
+      backColor = HOLIDAY_THEMES.at(argv[i]).second;
+    } else if (strcmp("-i", argv[i]) == 0) {
       std::string fileName = argv[++i];
       std::ifstream inputFile;
       inputFile.open(fileName,std::ios::in);
@@ -174,9 +192,9 @@ int main(int argc, char *argv[]) {
                     tokens.push_back(token);
               }
               if (tokens.size() == 3) {
-                color=tokens[0];
-                backColor=tokens[1];
-                strokeWidth=stoi(tokens[2]);
+                color = tokens[0];
+                backColor = tokens[1];
+                strokeWidth= stoi(tokens[2]);
                 break;
               }
         }
@@ -188,14 +206,18 @@ int main(int argc, char *argv[]) {
         usage(std::cerr);
         return 1;
       }
-      color = argv[++i];
+      ++i;
+      if (!theme)
+        color = argv[i];
     } else if (strcmp("-b", argv[i]) == 0) {
       if (COLORS.find(argv[i + 1]) == COLORS.end()) {
         std::cerr << "Unknown background color " << argv[i + 1] << std::endl;
         usage(std::cerr);
         return 1;
       }
-      backColor = argv[++i];
+      ++i;
+      if (!theme)
+        backColor = argv[i];
     } else {
       int x;
       try {
